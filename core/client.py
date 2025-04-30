@@ -2,11 +2,8 @@ import asyncio
 from contextlib import AsyncExitStack
 from typing import List, Optional
 
-from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters, Tool
 from mcp.client.stdio import stdio_client
-
-load_dotenv()  # load environment variables from .env
 
 
 class MCPClient:
@@ -40,10 +37,15 @@ class MCPClient:
         # List available tools
         response = await self.session.list_tools()
         self.tools = response.tools
-        print("\nConnected to server with tools:", [tool.name for tool in self.tools])
+        print("连接到工具:", [tool.name for tool in self.tools])
 
     def get_all_tools(self):
         return self.tools
+
+    def call_tool(self, name: str, arguments: dict):
+        if self.session is None:
+            raise RuntimeError("Session not initialized. Call connect_to_server first.")
+        return self.session.call_tool(name, arguments)
 
     async def close_connection(self):
         await self.exit_stack.aclose()

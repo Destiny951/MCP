@@ -1,5 +1,6 @@
 from rich import print
 
+
 def log_title(message: str):
     total_length = 80
     message_length = len(message)
@@ -12,4 +13,3 @@ def log_title(message: str):
         padded_message += "="
 
     print(f"[bold cyan]{padded_message}[/bold cyan]")
-

@@ -1,18 +1,11 @@
 import json
 import os
-from typing import List, Optional, Union
+from typing import List, NamedTuple, Optional, Union
 
 import aiohttp
-from dotenv import load_dotenv
 from mcp import Tool
-from utils.util import log_title
 
-# 加载.env文件
-load_dotenv()
-
-OLLAMA_HOST = os.getenv("OLLAMA_HOST")
-OLLAMA_PORT = os.getenv("OLLAMA_PORT")
-OLLAMA_API_URL = os.getenv("OLLAMA_API_URL")
+from .utils.util import log_title
 
 
 class ToolCall:
@@ -50,9 +43,20 @@ class ToolCall:
                 {"function": {"name": name, "arguments": arguments}}
             )
 
+    def get_all_tools(self):
+        return self.function_calls
+
+    def get_tools_num(self):
+        return len(self.function_calls)
+
     def to_json(self) -> str:
 
         return json.dumps(self.function_calls)
+
+
+class LLMResponseData(NamedTuple):
+    content: str
+    tool_call: ToolCall
 
 
 class LLM:
@@ -70,11 +74,12 @@ class LLM:
 
     def __init__(
         self,
+        api_url: str,
         model: str,
         sys_prompt: Optional[str] = None,
         tools: Optional[List[Tool]] = None,
     ):
-        self.url = f"{OLLAMA_HOST}:{OLLAMA_PORT}{OLLAMA_API_URL}"
+        self.url = api_url
         self.model = model
         self.sys_prompt = sys_prompt
         self.tools = tools
@@ -152,10 +157,7 @@ class LLM:
                         except Exception as e:
                             log_title(f"解析错误: {e}")
 
-                    self.add_assistant_message(full_response)
-
-                    if tool_call_obj:
-                        self.add_tool_message(tool_call_obj)
+                    return LLMResponseData(full_response, tool_call_obj)
 
         except Exception as e:
             log_title(f"请求或流式处理出错: {e}")
