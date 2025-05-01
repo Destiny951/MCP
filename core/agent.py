@@ -1,13 +1,35 @@
 import asyncio
-from typing import List, Optional
+import json
+from typing import Any, List, Optional
 
 from dotenv import load_dotenv
 
+from mcp import Tool
+
 from .client import MCPClient
-from .llm import LLM
+from .llm import LLM, ToolCall
 from .utils.util import log_title
 
 load_dotenv()
+
+
+def transform_tools_format(tools: List[Tool]):
+    tool_call_instance = ToolCall()  # 创建 ToolCall 实例
+
+    for tool in tools:
+        # 创建目标数据格式
+        function_info = {
+            "function": {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": json.dumps(tool.inputSchema),
+            }
+        }
+
+        # 将转换后的数据添加到 ToolCall
+        tool_call_instance.add_tool_call(function_info)
+
+    return tool_call_instance
 
 
 class Agent:
@@ -24,7 +46,8 @@ class Agent:
         self.clients = clients
         self.sys_prompt = sys_prompt
         self.enable_memory = enable_memory
-        self.init()
+        self.llm = None
+        self.tool_calls = None
 
     async def init(self):
         log_title("初始化智能体")
@@ -45,12 +68,11 @@ class Agent:
             self.clients = [client for client in self.clients if client is not None]
 
             # 获取所有工具
-            tools = await asyncio.gather(
-                *[client.get_all_tools() for client in self.clients]
-            )
+            for client in self.clients:
+                self.tool_calls = transform_tools_format(client.get_all_tools())
 
             # 初始化 LLM
-            self.llm = LLM(self.model, self.api_url, self.sys_prompt, tools)
+            self.llm = LLM(self.api_url, self.model, self.sys_prompt, self.tool_calls)
 
         except Exception as e:
             # 捕获并记录异常
@@ -59,6 +81,7 @@ class Agent:
 
     async def close(self):
         await asyncio.gather(*[client.close_connection() for client in self.clients])
+        self.tool_call.clear()
 
     async def invoke(self, prompt: str):
         if not self.llm:
@@ -77,7 +100,6 @@ class Agent:
                             break
                 response = await self.llm.chat()
                 continue
-            await self.close()
             break
         if self.enable_memory:
             self.llm.add_assistant_message(response.content)

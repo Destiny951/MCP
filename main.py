@@ -1,5 +1,7 @@
 import asyncio
 import os
+import subprocess
+import sys
 
 from dotenv import load_dotenv
 
@@ -16,6 +18,27 @@ OLLAMA_API_URL = os.getenv("OLLAMA_API_URL")
 REQUEST_URL = f"{OLLAMA_HOST}:{OLLAMA_PORT}{OLLAMA_API_URL}"
 
 
+def get_npx_path():
+    try:
+        if sys.platform == "win32":
+            result = subprocess.run(
+                ["where", "npx"], check=True, capture_output=True, text=True
+            )
+            lines = result.stdout.strip().splitlines()
+            if not lines:
+                raise RuntimeError("npx not found in system PATH")
+            npx_path = lines[-1]
+        else:
+            npx_path = "npx"
+        return npx_path
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("Failed to locate npx executable via 'where' command") from e
+
+    except IndexError as e:
+        raise RuntimeError("Unexpected output from 'where npx' command") from e
+
+
 async def main():
 
     currentDir = os.getcwd()
@@ -26,7 +49,7 @@ async def main():
     fetchMCP = MCPClient("mcp-server-fetch", "uvx", ["mcp-server-fetch"])
     fileMCP = MCPClient(
         "mcp-server-file",
-        "npx",
+        get_npx_path(),
         [
             "-y",
             "@modelcontextprotocol/server-filesystem",

@@ -2,12 +2,15 @@ import os
 import subprocess
 import sys
 
-# print(os.environ["PATH"])
-
 
 def test_npx_execution():
+
+    result = subprocess.run(
+        ["where", "npx"], check=True, capture_output=True, text=True
+    )
+    npx_path = result.stdout.strip().splitlines()[-1]
     # 测试命令
-    command = ["npx", "-v"]  # 通过 npx 查看版本号，确认 npx 是否可用
+    command = [npx_path, "-v"]  # 通过 npx 查看版本号，确认 npx 是否可用
 
     try:
         # 执行命令并捕获输出
