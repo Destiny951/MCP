@@ -60,7 +60,7 @@ async def main():
     agent = Agent(
         model=CHAT_MODEL,
         api_url=REQUEST_URL,
-        clients=[fileMCP],
+        clients=[fetchMCP, fileMCP],
         sys_prompt="除非用户指定，否则默认回复中文",
         enable_memory=True,
     )

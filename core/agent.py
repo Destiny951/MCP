@@ -13,9 +13,7 @@ from .utils.util import log_title
 load_dotenv()
 
 
-def transform_tools_format(tools: List[Tool]):
-    tool_call_instance = ToolCall()  # 创建 ToolCall 实例
-
+def transform_tools_format(tool_calls: ToolCall, tools: List[Tool]):
     for tool in tools:
         # 创建目标数据格式
         function_info = {
@@ -27,9 +25,7 @@ def transform_tools_format(tools: List[Tool]):
         }
 
         # 将转换后的数据添加到 ToolCall
-        tool_call_instance.add_tool_call(function_info)
-
-    return tool_call_instance
+        tool_calls.add_tool_call(function_info)
 
 
 class Agent:
@@ -47,7 +43,7 @@ class Agent:
         self.sys_prompt = sys_prompt
         self.enable_memory = enable_memory
         self.llm = None
-        self.tool_calls = None
+        self.tool_calls = ToolCall()
 
     async def init(self):
         log_title("初始化智能体")
@@ -69,7 +65,7 @@ class Agent:
 
             # 获取所有工具
             for client in self.clients:
-                self.tool_calls = transform_tools_format(client.get_all_tools())
+                transform_tools_format(self.tool_calls, client.get_all_tools())
 
             # 初始化 LLM
             self.llm = LLM(self.api_url, self.model, self.sys_prompt, self.tool_calls)
@@ -81,7 +77,7 @@ class Agent:
 
     async def close(self):
         await asyncio.gather(*[client.close_connection() for client in self.clients])
-        self.tool_call.clear()
+        self.tool_calls.clear()
 
     async def invoke(self, prompt: str):
         if not self.llm:
