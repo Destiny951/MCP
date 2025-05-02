@@ -40,12 +40,8 @@ def get_npx_path():
 
 
 async def main():
-
+    # 初始化客户端
     currentDir = os.getcwd()
-    url = "https://news.ycombinator.com/"
-    outPath = os.path.join(currentDir, "output")
-    prompt = f"请从{url}获取新闻，并保存到{outPath}/antonette.md,输出一个漂亮md文件"
-
     fetchMCP = MCPClient("mcp-server-fetch", "uvx", ["mcp-server-fetch"])
     fileMCP = MCPClient(
         "mcp-server-file",
@@ -57,17 +53,44 @@ async def main():
         ],
     )
 
+    # 初始化智能体
     agent = Agent(
         model=CHAT_MODEL,
         api_url=REQUEST_URL,
-        clients=[fetchMCP, fileMCP],
+        clients=[fileMCP, fetchMCP],
         sys_prompt="除非用户指定，否则默认回复中文",
         enable_memory=True,
     )
 
     await agent.init()
-    await agent.invoke(prompt)
+
+    # 对话循环
+    log_title("✅ 智能体已启动，输入你的问题（输入 'exit' 或 'quit' 退出）:")
+
+    while True:
+        try:
+            log_title("用户提问：")
+            prompt = input(
+                "🧠 你："
+            ).strip()  # 请从https://baijiahao.baidu.com/s?id=1830983245152297044获取新闻，并整理结果保存到E:\mmproject\test\mcp-client/output/antonette.md,输出一个漂亮md文件,如果指定目录不存在，则创建目录
+            if prompt.lower() in ("exit", "quit"):
+                print("👋 正在关闭智能体...")
+                break
+            if prompt.lower() == "clear":
+                agent.clear_memory()
+                continue
+            if not prompt:
+                continue  # 忽略空输入
+            log_title("模型回复")
+            await agent.invoke(prompt)
+        except KeyboardInterrupt:
+            print("\n🛑 检测到中断，正在关闭...")
+            break
+        except Exception as e:
+            print(f"❌ 出现错误: {e}")
+
     await agent.close()
+    log_title("✅ 智能体已关闭")
 
 
 if __name__ == "__main__":

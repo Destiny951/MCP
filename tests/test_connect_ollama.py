@@ -1,18 +1,57 @@
 import asyncio
 import json
+import os
 
 import aiohttp
+from dotenv import load_dotenv
+
+load_dotenv()
+
+CHAT_MODEL = os.getenv("CHAT_MODEL")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST")
+OLLAMA_PORT = os.getenv("OLLAMA_PORT")
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL")
+REQUEST_URL = f"{OLLAMA_HOST}:{OLLAMA_PORT}{OLLAMA_API_URL}"
 
 
 async def test_ollama():
-    url = (
-        "http://localhost:11434/api/chat"  # 假设本地 Ollama 服务运行在 localhost:11434
-    )
+    url = REQUEST_URL
 
     # 构建请求的 payload
     payload = {
-        "model": "qwen3:1.7b",  # 模型名称
-        "messages": [{"role": "user", "content": "Why is the sky blue?"}],  # 请求的内容
+        "model": CHAT_MODEL,  # 模型名称
+        "messages": [
+            {"role": "user", "content": "Why is the sky blue?"},
+            {
+                "role": "system",
+                "content": "除非用户指定，否则默认回复中文,包括思考过程",
+            },
+        ],
+        "tools": [],
+        # "tools": [
+        #     {
+        #         "type": "function",
+        #         "function": {
+        #             "name": "get_current_weather",
+        #             "description": "Get the current weather for a location",
+        #             "parameters": {
+        #                 "type": "object",
+        #                 "properties": {
+        #                     "location": {
+        #                         "type": "string",
+        #                         "description": "The location to get the weather for, e.g. San Francisco, CA",
+        #                     },
+        #                     "format": {
+        #                         "type": "string",
+        #                         "description": "The format to return the weather in, e.g. 'celsius' or 'fahrenheit'",
+        #                         "enum": ["celsius", "fahrenheit"],
+        #                     },
+        #                 },
+        #                 "required": ["location", "format"],
+        #             },
+        #         },
+        #     }
+        # ],
     }
 
     # 使用 aiohttp 发送 POST 请求
@@ -25,11 +64,9 @@ async def test_ollama():
                     # 逐行读取 ndjson 数据
                     async for line in response.content:
                         try:
-                            # 尝试解析每行 JSON 数据
                             result = json.loads(line.decode("utf-8"))
                             print(
-                                "Response from Ollama API:",
-                                json.dumps(result, indent=2),
+                                result.get("message").get("content"), end="", flush=True
                             )
                         except json.JSONDecodeError as e:
                             print(f"Error decoding JSON: {e}")

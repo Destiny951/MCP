@@ -12,4 +12,4 @@ def log_title(message: str):
     if len(padded_message) < total_length:
         padded_message += "="
 
-    print(f"[bold cyan]{padded_message}[/bold cyan]")
+    print(f"\n[bold cyan]{padded_message}[/bold cyan]")
