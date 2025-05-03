@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from core.agent import Agent
 from core.client import MCPClient
+from core.utils.embedding_retriever import EmbeddingRetriever
 from core.utils.util import log_title
 
 load_dotenv()
@@ -16,6 +17,34 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 OLLAMA_PORT = os.getenv("OLLAMA_PORT")
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL")
 REQUEST_URL = f"{OLLAMA_HOST}:{OLLAMA_PORT}{OLLAMA_API_URL}"
+
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
+EMBEDDING_API_URL = os.getenv("EMBEDDING_API_URL")
+EMBEDDING_REQUEST_URL = f"{OLLAMA_HOST}:{OLLAMA_PORT}{EMBEDDING_API_URL}"
+
+
+async def embed_documents():
+    # RAG
+    embedding_retriever = EmbeddingRetriever(EMBEDDING_MODEL, EMBEDDING_REQUEST_URL)
+    knowledge_dir = os.path.join(os.getcwd(), "knowledge")
+    files = os.listdir(knowledge_dir)
+
+    for file in files:
+        file_path = os.path.join(knowledge_dir, file)
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            await embedding_retriever.embed_document(content)
+
+    return embedding_retriever
+
+
+async def retrieve_context(embedding_retriever: EmbeddingRetriever, prompt: str):
+    context_list = await embedding_retriever.retrieve(prompt, 3)
+    context = "\n".join(context_list)
+
+    log_title("CONTEXT")
+    print(context)
+    return context
 
 
 def get_npx_path():
@@ -53,12 +82,14 @@ async def main():
         ],
     )
 
+    vector_database = await embed_documents()
     # 初始化智能体
     agent = Agent(
         model=CHAT_MODEL,
         api_url=REQUEST_URL,
         clients=[fileMCP, fetchMCP],
         sys_prompt="除非用户指定，否则默认回复中文",
+        vector_database=vector_database,
         enable_memory=True,
     )
 

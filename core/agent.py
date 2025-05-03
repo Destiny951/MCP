@@ -5,6 +5,8 @@ from typing import Any, List, Optional
 from dotenv import load_dotenv
 from mcp import Tool
 
+from core.utils.embedding_retriever import EmbeddingRetriever
+
 from .client import MCPClient
 from .llm import LLM, ToolCall
 from .utils.util import log_title
@@ -34,14 +36,14 @@ class Agent:
         api_url: str,
         clients: Optional[List[MCPClient]] = None,
         sys_prompt: Optional[str] = None,
-        context: Optional[str] = None,
+        vector_database: Optional[EmbeddingRetriever] = None,
         enable_memory: bool = True,
     ):
         self.model = model
         self.api_url = api_url
         self.clients = clients
         self.sys_prompt = sys_prompt
-        self.context = context
+        self.vector_database = vector_database
         self.enable_memory = enable_memory
         self.llm = None
         self.tool_calls = ToolCall()
@@ -71,7 +73,11 @@ class Agent:
 
             # 初始化 LLM
             self.llm = LLM(
-                self.api_url, self.model, self.sys_prompt, self.context, self.tool_calls
+                self.api_url,
+                self.model,
+                self.sys_prompt,
+                self.vector_database,
+                self.tool_calls,
             )
 
         except Exception as e:

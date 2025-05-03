@@ -5,6 +5,8 @@ from typing import List, NamedTuple, Optional, Union
 import aiohttp
 from mcp import Tool
 
+from core.utils.embedding_retriever import EmbeddingRetriever
+
 from .utils.util import log_title
 
 
@@ -63,20 +65,18 @@ class LLM:
         api_url: str,
         model: str,
         sys_prompt: Optional[str] = None,
-        context: Optional[str] = None,
+        vector_database: Optional[EmbeddingRetriever] = None,
         tools: Optional[ToolCall] = None,
     ):
         self.url = api_url
         self.model = model
         self.sys_prompt = sys_prompt
-        self.context = context
+        self.vector_database = vector_database
         self.tools = tools
         self.messages = []
 
         if sys_prompt:
             self.messages.append({"role": "system", "content": self.sys_prompt})
-        if context:
-            self.add_user_message(context)
 
     def add_user_message(self, content: str):
         """添加用户消息到上下文"""
@@ -90,7 +90,12 @@ class LLM:
         self.messages.append({"role": "tool", "content": content})
 
     async def chat(self, prompt: Optional[str] = None):
+
         if prompt:
+            if self.vector_database:
+                context_list = await self.vector_database.retrieve(prompt, 3)
+                context = "\n".join(context_list)
+                self.add_user_message(context)
             self.add_user_message(prompt)
 
         payload = {
