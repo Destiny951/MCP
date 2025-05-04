@@ -4,12 +4,6 @@ from typing import List
 
 class VectorStoreItem:
     def __init__(self, embedding: List[float], document: str):
-        if not isinstance(embedding, list) or not all(
-            isinstance(x, (int, float)) for x in embedding
-        ):
-            raise ValueError("Embedding must be a list of numbers.")
-        if not isinstance(document, str):
-            raise ValueError("Document must be a string.")
 
         self.embedding = embedding
         self.document = document
@@ -21,9 +15,7 @@ class VectorStore:
         self.vector_store: List[VectorStoreItem] = []
 
     async def add_embedding(self, embedding: List[float], document: str):
-        if not isinstance(embedding, list) or not all(
-            isinstance(x, (int, float)) for x in embedding
-        ):
+        if not isinstance(embedding, list):
             raise ValueError("Embedding must be a list of numbers.")
         if not isinstance(document, str):
             raise ValueError("Document must be a string.")

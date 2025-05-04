@@ -25,6 +25,7 @@ EMBEDDING_REQUEST_URL = f"{OLLAMA_HOST}:{OLLAMA_PORT}{EMBEDDING_API_URL}"
 
 async def embed_documents():
     # RAG
+    log_title("编码文档")
     embedding_retriever = EmbeddingRetriever(EMBEDDING_MODEL, EMBEDDING_REQUEST_URL)
     knowledge_dir = os.path.join(os.getcwd(), "knowledge")
     files = os.listdir(knowledge_dir)
